@@ -1,3 +1,5 @@
+import os
+
 import numpy
 import scipy.io
 from sklearn.cluster import KMeans
@@ -23,19 +25,16 @@ def train_model(X, y):
 
 
 def main():
-    X_train_oh1, y_train_oh1 = read_dataset('data\OH1.mat')
-    oh1_nmi, oh1_ari = train_model(X_train_oh1, y_train_oh1)
+    datasets = os.listdir('data/')
+    metrics = []
+    for dataset in datasets:
+        X_train, y_train = read_dataset(f'data\{dataset}')
+        nmi, ari = train_model(X_train, y_train)
+        metrics += [[dataset, nmi, ari]]
 
-    X_train_oh2, y_train_oh2 = read_dataset('data\OH2.mat')
-    oh2_nmi, oh2_ari = train_model(X_train_oh2, y_train_oh2)
-
-    X_train_oh3, y_train_oh3 = read_dataset('data\OH3.mat')
-    oh3_nmi, oh3_ari = train_model(X_train_oh3, y_train_oh3)
-
-    table = tabulate([['OH1', oh1_nmi, oh1_ari], ['OH2', oh2_nmi, oh2_ari], ['OH3', oh3_nmi, oh3_ari]],
-                     headers=['Dataset', 'NMI', 'ARI'])
-
+    table = tabulate(metrics, headers=['Dataset', 'NMI', 'ARI'])
     print(table)
+
 
 if __name__ == '__main__':
     main()
