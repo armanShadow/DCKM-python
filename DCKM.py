@@ -10,6 +10,7 @@ def read_dataset(path):
     return mat['X_train'], mat['label'].reshape(mat['label'].shape[0])
 
 
+# update centroids
 def update_f(X, w, G):
     ones = np.ones((X.shape[1], 1))
     first_term = np.multiply(X.T, np.matmul(ones, w.T))
@@ -20,11 +21,26 @@ def update_f(X, w, G):
     return np.matmul(forth_term, np.linalg.inv(third_term))
 
 
+# update cluster assignment matrix
+def update_g(F, X):
+    G = np.zeros((X.shape[0], F.shape[1]))
+    for i, sample in enumerate(X):
+        distances = []
+        for centroid in F.T:
+            distances += [np.linalg.norm(sample - centroid)]
+        minimum = min(distances)
+        index = distances.index(minimum)
+        gi = np.zeros((1, F.shape[1]))
+        gi[0][index] = 1
+        G[i] = gi
+    return G
+
 def DCKM():
     w = np.array([[1], [2], [1.5]])
-    X = np.array([[1, 2, 3], [1, 2, 3], [1, 2, 3]])
+    X = np.array([[1, 2, 3], [2, 1, 5], [5, 2, 1]])
     G = np.array([[1, 0], [0, 1], [0, 1]])
     F = update_f(X, w, G)
+    new_g = update_g(F, X)
     return 0, 0
 
 
