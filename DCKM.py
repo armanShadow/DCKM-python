@@ -2,12 +2,14 @@ import os
 
 import numpy as np
 import scipy.io
+from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
 from tabulate import tabulate
 
 learning_rate = 0.01
 lambda1 = 1
 lambda2 = 1
 lambda3 = 1
+e = 0.01
 
 
 def read_dataset(path):
@@ -43,7 +45,7 @@ def update_g(F, X):
 
 def feature_decorrelation(X, j):
     uncorrelated = np.copy(X.T)
-    uncorrelated[j] = np.zeros((1, X.shape[1]))
+    uncorrelated[j] = np.zeros((1, X.shape[0]))
     return uncorrelated
 
 
@@ -79,10 +81,9 @@ def partial_gradient_jbw(X, w, j):
 
 
 def partial_gradient_jw(X, F, G, w):
-    ones_n = np.ones((X.shape[0], 1))
     ones_d = np.ones((X.shape[1], 1))
     first_term_1 = np.multiply(X.T - np.matmul(F, G.T), X.T - np.matmul(F, G.T))
-    first_term = np.multiply(np.matmul(ones_n.T, first_term_1).T, w)
+    first_term = np.multiply(np.matmul(ones_d.T, first_term_1).T, w)
 
     sum_1 = np.zeros((X.shape[0], 1))
     for j in range(X.shape[1]):
@@ -91,12 +92,12 @@ def partial_gradient_jw(X, F, G, w):
         sum_1 += second_term
     sum_1 = sum_1 * lambda1
 
-    third_term = np.multiply(np.multiply(w,w), w) * lambda2 * 4
+    third_term = np.multiply(np.multiply(w, w), w) * lambda2 * 4
 
     sum_2 = 0
     for i in range(X.shape[0]):
-        sum_2 += (w[i] * w[i]) -1
-    forth_term = 4*lambda3*sum_2*w
+        sum_2 += (w[i] * w[i]) - 1
+    forth_term = 4 * lambda3 * sum_2 * w
 
     return first_term + sum_1 + third_term + forth_term
 
@@ -105,13 +106,41 @@ def update_w(X, F, G, w):
     return w - learning_rate * partial_gradient_jw(X, F, G, w)
 
 
-def DCKM():
-    w = np.array([[1], [2], [1.5]])
-    X = np.array([[1, 2, 3], [2, 1, 5], [5, 2, 1]])
-    G = np.array([[1, 0], [0, 1], [0, 1]])
-    F = update_f(X, w, G)
-    new_g = update_g(F, X)
-    return 0, 0
+def loss_function(X, F, G, w):
+    sum = 0
+    for i in range(X.shape[0]):
+        sum += np.linalg.norm(X[i] - np.matmul(G[i], F.T)) * w[i]
+    return sum
+
+
+def predict(G):
+    y_predict = np.zeros((G.shape[0], 1))
+    for i in range(G.shape[0]):
+        index = np.where(G[i] == 1)
+        y_predict[i] = index
+    return y_predict
+
+
+def DCKM(X, y):
+    clusters = len(np.unique(y))
+    # initial random centroids
+    index = np.random.choice(X.shape[0], clusters, replace=False)
+    F = X[index].T
+    w = np.ones((X.shape[0], 1))
+    G = update_g(F, X)
+
+    while loss_function(X, F, G, w) > e:
+        print(loss_function(X, F, G, w))
+        F = update_f(X, w, G)
+        G = update_g(F, X)
+        w = update_w(X, F, G, w)
+
+    y_predict = predict(G)
+
+    nmi = normalized_mutual_info_score(y, y_predict)
+    ari = adjusted_rand_score(y, y_predict)
+
+    return nmi, ari
 
 
 def main():
@@ -127,7 +156,4 @@ def main():
 
 
 if __name__ == '__main__':
-    w = np.array([[1], [2], [1.5]])
-    X = np.array([[1, 2, 3], [2, 1, 5], [5, 2, 1]])
-    j = partial_gradient_jw(X, w, 0)
-    print(j)
+    main()
