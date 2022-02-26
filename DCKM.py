@@ -103,14 +103,15 @@ def partial_gradient_jw(X, F, G, w):
 
 
 def update_w(X, F, G, w):
-    return w - learning_rate * partial_gradient_jw(X, F, G, w)
+    w_not_positive = np.sqrt(w) - learning_rate * partial_gradient_jw(X, F, G, np.sqrt(w))
+    return np.multiply(w_not_positive, w_not_positive)
 
 
 def loss_function(X, F, G, w):
     sum = 0
     for i in range(X.shape[0]):
         sum += np.linalg.norm(X[i] - np.matmul(G[i], F.T)) * w[i]
-    return sum
+    return sum/X.shape[0]
 
 
 def predict(G):
@@ -118,7 +119,7 @@ def predict(G):
     for i in range(G.shape[0]):
         index = np.where(G[i] == 1)
         y_predict[i] = index
-    return y_predict
+    return np.squeeze(y_predict)
 
 
 def DCKM(X, y):
@@ -130,10 +131,11 @@ def DCKM(X, y):
     G = update_g(F, X)
 
     while loss_function(X, F, G, w) > e:
-        print(loss_function(X, F, G, w))
         F = update_f(X, w, G)
         G = update_g(F, X)
         w = update_w(X, F, G, w)
+        print(loss_function(X, F, G, w))
+
 
     y_predict = predict(G)
 
